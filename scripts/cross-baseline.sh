@@ -14,10 +14,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-IMAGE=${IMAGE:-rvv-cross:1}
+IMAGE=${IMAGE:-rvv-cross:2}
 MARCH=${MARCH:-rv64gc}
 OUT=build/riscv64-b
-HARNESS=${HARNESS:-pkg_harness}   # test/ 下探针的可执行名（target 名）
+HARNESS=${HARNESS:-aom_harness}   # test/ 下探针的可执行名（target 名）
 
 docker run --rm -v "$PWD":/work -w /work "${IMAGE}" bash -lc "
 set -e
@@ -26,7 +26,9 @@ rm -rf ${OUT}
 # 1) 编上游到 ${OUT}/prefix
 cmake -S baseline -B ${OUT}/bld \
   -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/work/${OUT}/prefix \
-  -DBUILD_SHARED_LIBS=OFF \
+  -DBUILD_SHARED_LIBS=OFF -DAOM_TARGET_CPU=generic \
+  -DENABLE_TESTS=OFF -DENABLE_EXAMPLES=OFF -DENABLE_TOOLS=OFF -DENABLE_DOCS=OFF \
+  -DENABLE_CCLIBS=OFF -DCONFIG_AV1_ENCODER=1 -DCONFIG_AV1_DECODER=1 -DCONFIG_MULTITHREAD=1 \
   -DCMAKE_TOOLCHAIN_FILE=/work/cmake/toolchain-riscv64-linux.cmake \
   -DCMAKE_C_FLAGS='-march=${MARCH}' > /tmp/cfg.log 2>&1 || { tail -30 /tmp/cfg.log; exit 1; }
 cmake --build ${OUT}/bld -j > /tmp/bld.log 2>&1 || { tail -20 /tmp/bld.log; exit 1; }
@@ -41,7 +43,7 @@ cmake --build ${OUT}/harness -j > /tmp/hb.log 2>&1 || { tail -20 /tmp/hb.log; ex
 
 # 3) 跑（qemu-user + 目标 sysroot）
 cd /work && mkdir -p ${OUT}/out
-qemu-riscv64 -L /usr/riscv64-linux-gnu ${OUT}/harness/${HARNESS} ${OUT}/out/out.bin > ${OUT}/out/hash.txt
+qemu-riscv64 -L /usr/riscv64-linux-gnu ${OUT}/harness/${HARNESS} ${OUT}/out/hash.txt > ${OUT}/out/hash.txt
 echo \"--- riscv64（${MARCH}）---\"; cat ${OUT}/out/hash.txt
 echo \"--- native 基线 ---\"; cat build/ab-data/out/01_*/a/hash.txt
 "
