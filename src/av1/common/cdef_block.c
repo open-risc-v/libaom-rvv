@@ -16,6 +16,42 @@
 #include "config/av1_rtcd.h"
 
 #include "av1/common/cdef.h"
+
+#if HAVE_RVV
+void cdef_filter_8_0_rvv(void *dest, int dstride, const uint16_t *in,
+                         int pri_strength, int sec_strength, int dir,
+                         int pri_damping, int sec_damping, int coeff_shift,
+                         int block_width, int block_height);
+void cdef_filter_8_1_rvv(void *dest, int dstride, const uint16_t *in,
+                         int pri_strength, int sec_strength, int dir,
+                         int pri_damping, int sec_damping, int coeff_shift,
+                         int block_width, int block_height);
+void cdef_filter_8_2_rvv(void *dest, int dstride, const uint16_t *in,
+                         int pri_strength, int sec_strength, int dir,
+                         int pri_damping, int sec_damping, int coeff_shift,
+                         int block_width, int block_height);
+void cdef_filter_8_3_rvv(void *dest, int dstride, const uint16_t *in,
+                         int pri_strength, int sec_strength, int dir,
+                         int pri_damping, int sec_damping, int coeff_shift,
+                         int block_width, int block_height);
+void cdef_filter_16_0_rvv(void *dest, int dstride, const uint16_t *in,
+                          int pri_strength, int sec_strength, int dir,
+                          int pri_damping, int sec_damping, int coeff_shift,
+                          int block_width, int block_height);
+void cdef_filter_16_1_rvv(void *dest, int dstride, const uint16_t *in,
+                          int pri_strength, int sec_strength, int dir,
+                          int pri_damping, int sec_damping, int coeff_shift,
+                          int block_width, int block_height);
+void cdef_filter_16_2_rvv(void *dest, int dstride, const uint16_t *in,
+                          int pri_strength, int sec_strength, int dir,
+                          int pri_damping, int sec_damping, int coeff_shift,
+                          int block_width, int block_height);
+void cdef_filter_16_3_rvv(void *dest, int dstride, const uint16_t *in,
+                          int pri_strength, int sec_strength, int dir,
+                          int pri_damping, int sec_damping, int coeff_shift,
+                          int block_width, int block_height);
+#endif
+
 /*
 This is Cdef_Directions (section 7.15.3) with 2 padding entries at the
 beginning and end of the table. The cdef direction range is [0, 7] and the
@@ -377,9 +413,16 @@ void av1_cdef_filter_fb(uint8_t *dst8, uint16_t *dst16, int dstride,
      * strength_index == 2 : enable_primary = 0, enable_secondary = 1
      * strength_index == 3 : enable_primary = 0, enable_secondary = 0
      */
+#if HAVE_RVV
+    const cdef_filter_block_func cdef_filter_fn[4] = {
+      cdef_filter_8_0_rvv, cdef_filter_8_1_rvv, cdef_filter_8_2_rvv,
+      cdef_filter_8_3_rvv
+    };
+#else
     const cdef_filter_block_func cdef_filter_fn[4] = {
       cdef_filter_8_0, cdef_filter_8_1, cdef_filter_8_2, cdef_filter_8_3
     };
+#endif
 
     for (bi = 0; bi < cdef_count; bi++) {
       by = dlist[bi].by;
@@ -403,9 +446,16 @@ void av1_cdef_filter_fb(uint8_t *dst8, uint16_t *dst16, int dstride,
      * strength_index == 2 : enable_primary = 0, enable_secondary = 1
      * strength_index == 3 : enable_primary = 0, enable_secondary = 0
      */
+#if HAVE_RVV
+    const cdef_filter_block_func cdef_filter_fn[4] = {
+      cdef_filter_16_0_rvv, cdef_filter_16_1_rvv, cdef_filter_16_2_rvv,
+      cdef_filter_16_3_rvv
+    };
+#else
     const cdef_filter_block_func cdef_filter_fn[4] = {
       cdef_filter_16_0, cdef_filter_16_1, cdef_filter_16_2, cdef_filter_16_3
     };
+#endif
 
     for (bi = 0; bi < cdef_count; bi++) {
       by = dlist[bi].by;
